@@ -5,6 +5,9 @@
 #include <cstring>
 #include <cmath>
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "tiny_obj_loader.h"
+
 #include <glm/glm.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -56,48 +59,79 @@ bool RenderApp::InitSDL() {
 }
 
 bool RenderApp::CreateMesh() {
-    app::Vertex vertexData[] = {
-        // Front Face (Red) +Z
-        {glm::vec3(-0.5f, -0.5f,  0.5f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)}, {glm::vec3( 0.5f, -0.5f,  0.5f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)},
-        {glm::vec3( 0.5f,  0.5f,  0.5f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)}, {glm::vec3( 0.5f,  0.5f,  0.5f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)},
-        {glm::vec3(-0.5f,  0.5f,  0.5f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)}, {glm::vec3(-0.5f, -0.5f,  0.5f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)},
-        // Back Face (Cyan) -Z
-        {glm::vec3( 0.5f, -0.5f, -0.5f), glm::vec4(0.0f, 1.0f, 1.0f, 1.0f)}, {glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec4(0.0f, 1.0f, 1.0f, 1.0f)},
-        {glm::vec3(-0.5f,  0.5f, -0.5f), glm::vec4(0.0f, 1.0f, 1.0f, 1.0f)}, {glm::vec3(-0.5f,  0.5f, -0.5f), glm::vec4(0.0f, 1.0f, 1.0f, 1.0f)},
-        {glm::vec3( 0.5f,  0.5f, -0.5f), glm::vec4(0.0f, 1.0f, 1.0f, 1.0f)}, {glm::vec3( 0.5f, -0.5f, -0.5f), glm::vec4(0.0f, 1.0f, 1.0f, 1.0f)},
-        // Left Face (Yellow) -X
-        {glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec4(1.0f, 1.0f, 0.0f, 1.0f)}, {glm::vec3(-0.5f, -0.5f,  0.5f), glm::vec4(1.0f, 1.0f, 0.0f, 1.0f)},
-        {glm::vec3(-0.5f,  0.5f,  0.5f), glm::vec4(1.0f, 1.0f, 0.0f, 1.0f)}, {glm::vec3(-0.5f,  0.5f,  0.5f), glm::vec4(1.0f, 1.0f, 0.0f, 1.0f)},
-        {glm::vec3(-0.5f,  0.5f, -0.5f), glm::vec4(1.0f, 1.0f, 0.0f, 1.0f)}, {glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec4(1.0f, 1.0f, 0.0f, 1.0f)},
-        // Right Face (Green) +X
-        {glm::vec3( 0.5f, -0.5f,  0.5f), glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)}, {glm::vec3( 0.5f, -0.5f, -0.5f), glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)},
-        {glm::vec3( 0.5f,  0.5f, -0.5f), glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)}, {glm::vec3( 0.5f,  0.5f, -0.5f), glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)},
-        {glm::vec3( 0.5f,  0.5f,  0.5f), glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)}, {glm::vec3( 0.5f, -0.5f,  0.5f), glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)},
-        // Top Face (Blue) +Y
-        {glm::vec3(-0.5f,  0.5f,  0.5f), glm::vec4(0.0f, 0.0f, 1.0f, 1.0f)}, {glm::vec3( 0.5f,  0.5f,  0.5f), glm::vec4(0.0f, 0.0f, 1.0f, 1.0f)},
-        {glm::vec3( 0.5f,  0.5f, -0.5f), glm::vec4(0.0f, 0.0f, 1.0f, 1.0f)}, {glm::vec3( 0.5f,  0.5f, -0.5f), glm::vec4(0.0f, 0.0f, 1.0f, 1.0f)},
-        {glm::vec3(-0.5f,  0.5f, -0.5f), glm::vec4(0.0f, 0.0f, 1.0f, 1.0f)}, {glm::vec3(-0.5f,  0.5f,  0.5f), glm::vec4(0.0f, 0.0f, 1.0f, 1.0f)},
-        // Bottom Face (Magenta) -Y
-        {glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec4(1.0f, 0.0f, 1.0f, 1.0f)}, {glm::vec3( 0.5f, -0.5f, -0.5f), glm::vec4(1.0f, 0.0f, 1.0f, 1.0f)},
-        {glm::vec3( 0.5f, -0.5f,  0.5f), glm::vec4(1.0f, 0.0f, 1.0f, 1.0f)}, {glm::vec3( 0.5f, -0.5f,  0.5f), glm::vec4(1.0f, 0.0f, 1.0f, 1.0f)},
-        {glm::vec3(-0.5f, -0.5f,  0.5f), glm::vec4(1.0f, 0.0f, 1.0f, 1.0f)}, {glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec4(1.0f, 0.0f, 1.0f, 1.0f)}
-    };
+    tinyobj::attrib_t attrib;
+    std::vector <tinyobj::shape_t> shapes;
+    std::vector <tinyobj::material_t> materials;
+    std::string warn, err;
 
-    SDL_GPUBufferCreateInfo bufferInfo{SDL_GPU_BUFFERUSAGE_VERTEX, sizeof(vertexData)};
+    if(!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "recources/dragon.obj")) {
+        std::cerr << "Failed to load OBJ " << warn << err << '\n';
+    }
+
+    std::vector <app::Vertex> vertices;
+
+    // Center and scale the model
+    glm::vec3 minBounds(std::numeric_limits <float>::max());
+    glm::vec3 maxBounds(std::numeric_limits <float>::min());
+
+    for(const auto& shape : shapes) {
+        for(const auto& index : shape.mesh.indices) {
+            app::Vertex vertex{};
+
+            vertex.position = {
+                attrib.vertices[3 * index.vertex_index + 0],
+                attrib.vertices[3 * index.vertex_index + 1],
+                attrib.vertices[3 * index.vertex_index + 2]
+            };
+            
+            // Map normals to RGB colors
+            if (index.normal_index >= 0) {
+                vertex.color = {
+                    (attrib.normals[3 * index.normal_index + 0] + 1.0f) * 0.5f,
+                    (attrib.normals[3 * index.normal_index + 1] + 1.0f) * 0.5f,
+                    (attrib.normals[3 * index.normal_index + 2] + 1.0f) * 0.5f,
+                    1.0f
+                };
+            } else {
+                // Fallback color if the OBJ has no normals
+                vertex.color = { 0.8f, 0.8f, 0.8f, 1.0f };
+            }
+
+            minBounds = glm::min(minBounds, vertex.position);
+            maxBounds = glm::max(maxBounds, vertex.position);
+
+            vertices.push_back(vertex);
+        }
+    }
+
+    // Normalize the model
+    glm::vec3 center = (minBounds + maxBounds) * 0.5f;
+    glm::vec3 extents = maxBounds - minBounds;
+    float maxExtent = std::max({extents.x, extents.y, extents.y});
+    float scale = 2.0f / maxExtent;
+
+    for(auto& v : vertices) {
+        v.position = (v.position - center) * scale;
+    }
+
+    vertexCount = vertices.size();
+    size_t bufferSize = vertexCount * sizeof(app::Vertex);
+
+    SDL_GPUBufferCreateInfo bufferInfo{SDL_GPU_BUFFERUSAGE_VERTEX, (Uint32)bufferSize};
     vertexBuffer = SDL_CreateGPUBuffer(gpu, &bufferInfo);
 
-    SDL_GPUTransferBufferCreateInfo transferInfo{SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, sizeof(vertexData)};
+    SDL_GPUTransferBufferCreateInfo transferInfo{SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, (Uint32)bufferSize};
     SDL_GPUTransferBuffer* transferBuffer = SDL_CreateGPUTransferBuffer(gpu, &transferInfo);
 
     void* mapPtr = SDL_MapGPUTransferBuffer(gpu, transferBuffer, false);
-    std::memcpy(mapPtr, vertexData, sizeof(vertexData));
+    std::memcpy(mapPtr, vertices.data(), (Uint32)bufferSize);
     SDL_UnmapGPUTransferBuffer(gpu, transferBuffer);
 
     SDL_GPUCommandBuffer* uploadCmdBuf = SDL_AcquireGPUCommandBuffer(gpu);
     SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(uploadCmdBuf);
 
     SDL_GPUTransferBufferLocation source = { transferBuffer, 0 };
-    SDL_GPUBufferRegion destination = { vertexBuffer, 0, sizeof(vertexData) };
+    SDL_GPUBufferRegion destination = { vertexBuffer, 0, (Uint32)bufferSize};
     SDL_UploadToGPUBuffer(copyPass, &source, &destination, false);
 
     SDL_EndGPUCopyPass(copyPass);
@@ -258,7 +292,7 @@ void RenderApp::RenderFrame() {
         SDL_BindGPUVertexBuffers(renderPass, 0, &vertexBinding, 1);
 
         SDL_PushGPUVertexUniformData(cmdBuf, 0, glm::value_ptr(mvp), sizeof(glm::mat4));
-        SDL_DrawGPUPrimitives(renderPass, 36, 1, 0, 0);
+        SDL_DrawGPUPrimitives(renderPass, vertexCount, 1, 0, 0);
         SDL_EndGPURenderPass(renderPass);
     }
 

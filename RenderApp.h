@@ -40,4 +40,5 @@ class RenderApp {
         Uint32 currentDepthWidth = 0;
         Uint32 currentDepthHeight = 0;
 
+        Uint32 vertexCount = 0;
 };

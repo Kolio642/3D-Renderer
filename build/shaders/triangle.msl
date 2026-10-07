@@ -1,0 +1,36 @@
+#include <metal_stdlib>
+
+using namespace metal;
+
+// Struct holds the MVP Matrix
+struct Uniforms {
+    float4x4 mvp;
+};
+
+struct VertexInput {
+    float3 position [[attribute(0)]];
+    float4 color    [[attribute(1)]]; 
+};
+
+// Data passed from the Vertex shader to the Fragment shader
+struct RasterizerData {
+    float4  position [[position]];
+    float4 color;
+};
+
+// Vertex Shader
+vertex RasterizerData vertex_main(VertexInput in [[stage_in]], constant Uniforms& uniforms [[buffer(0)]]) {
+
+    RasterizerData out;
+
+    out.position = uniforms.mvp * float4(in.position, 1.0);
+    out.color = in.color;
+
+    return out;
+}
+
+// Fragment Shader
+fragment float4 fragment_main(RasterizerData in [[stage_in]]) {
+    // Return the color passed from the Vertex Shader
+    return in.color;
+}

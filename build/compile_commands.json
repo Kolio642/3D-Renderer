@@ -1,0 +1,14 @@
+[
+{
+  "directory": "/Users/nikola/workspace/fooling/3d-voxel-engine/build",
+  "command": "/usr/bin/clang++  -I/Users/nikola/workspace/fooling/3d-voxel-engine -isystem /opt/homebrew/include -g -std=gnu++17 -arch arm64 -o CMakeFiles/3d-voxel-engine.dir/main.cpp.o -c /Users/nikola/workspace/fooling/3d-voxel-engine/main.cpp",
+  "file": "/Users/nikola/workspace/fooling/3d-voxel-engine/main.cpp",
+  "output": "CMakeFiles/3d-voxel-engine.dir/main.cpp.o"
+},
+{
+  "directory": "/Users/nikola/workspace/fooling/3d-voxel-engine/build",
+  "command": "/usr/bin/clang++  -I/Users/nikola/workspace/fooling/3d-voxel-engine -isystem /opt/homebrew/include -g -std=gnu++17 -arch arm64 -o CMakeFiles/3d-voxel-engine.dir/RenderApp.cpp.o -c /Users/nikola/workspace/fooling/3d-voxel-engine/RenderApp.cpp",
+  "file": "/Users/nikola/workspace/fooling/3d-voxel-engine/RenderApp.cpp",
+  "output": "CMakeFiles/3d-voxel-engine.dir/RenderApp.cpp.o"
+}
+]

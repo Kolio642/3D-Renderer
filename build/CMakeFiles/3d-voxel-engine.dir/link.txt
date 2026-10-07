@@ -1,0 +1,1 @@
+/usr/bin/clang++ -g -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names "CMakeFiles/3d-voxel-engine.dir/main.cpp.o" "CMakeFiles/3d-voxel-engine.dir/RenderApp.cpp.o" -o 3d-voxel-engine  -Wl,-rpath,/opt/homebrew/lib /opt/homebrew/lib/libSDL3.0.dylib /opt/homebrew/lib/libglm.dylib

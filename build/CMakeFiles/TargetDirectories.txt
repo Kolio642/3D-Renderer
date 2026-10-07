@@ -1,0 +1,3 @@
+/Users/nikola/workspace/fooling/3d-voxel-engine/build/CMakeFiles/3d-voxel-engine.dir
+/Users/nikola/workspace/fooling/3d-voxel-engine/build/CMakeFiles/edit_cache.dir
+/Users/nikola/workspace/fooling/3d-voxel-engine/build/CMakeFiles/rebuild_cache.dir

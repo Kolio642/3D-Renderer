@@ -1,0 +1,14 @@
+# VS Code settings
+.vscode/
+
+# Mac system files
+.DS_Store
+
+# Compiled output and build directories
+build/
+*.o
+*.out
+*.app
+
+# If your executable is named something specific, add it here (e.g., main)
+main

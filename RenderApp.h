@@ -31,6 +31,7 @@ class RenderApp {
 
         // Graphics State
         SDL_GPUBuffer* vertexBuffer = nullptr;
+        SDL_GPUBuffer* indexBuffer = nullptr;
         SDL_GPUShader* vertexShader = nullptr;
         SDL_GPUShader* fragmentShader = nullptr;
         SDL_GPUGraphicsPipeline* pipeline = nullptr;
@@ -41,4 +42,5 @@ class RenderApp {
         Uint32 currentDepthHeight = 0;
 
         Uint32 vertexCount = 0;
+        Uint32 indexCount = 0;
 };

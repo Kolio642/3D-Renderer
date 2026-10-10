@@ -1,10 +1,11 @@
 #include "RenderApp.h"
 
-int main(int argc, char* argv[]) {
-    
+int main(int argc, char *argv[])
+{
     RenderApp app;
 
-    if(app.Initialize()) {
+    if (app.Initialize())
+    {
         app.Run();
     }
 

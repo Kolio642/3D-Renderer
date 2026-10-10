@@ -3,34 +3,62 @@
 using namespace metal;
 
 // Struct holds the MVP Matrix
-struct Uniforms {
+struct Uniforms
+{
     float4x4 mvp;
 };
 
-struct VertexInput {
+struct VertexInput
+{
     float3 position [[attribute(0)]];
-    float4 color    [[attribute(1)]]; 
+    float3 normal [[attribute(1)]];
 };
 
 // Data passed from the Vertex shader to the Fragment shader
-struct RasterizerData {
-    float4  position [[position]];
-    float4 color;
+struct RasterizerData
+{
+    float4 position [[position]];
+    float3 normal;
+};
+
+struct LightUniforms
+{
+    // We'll use float 4 bcause it-s better for memory alignment
+    float4 lightDirection;
+    float4 lightColor;
 };
 
 // Vertex Shader
-vertex RasterizerData vertex_main(VertexInput in [[stage_in]], constant Uniforms& uniforms [[buffer(0)]]) {
+vertex RasterizerData vertex_main(VertexInput in [[stage_in]], constant Uniforms &uniforms [[buffer(0)]])
+{
 
     RasterizerData out;
 
     out.position = uniforms.mvp * float4(in.position, 1.0);
-    out.color = in.color;
+    out.normal = (uniforms.mvp * float4(in.normal, 0.0f)).xyz;
 
     return out;
 }
 
 // Fragment Shader
-fragment float4 fragment_main(RasterizerData in [[stage_in]]) {
-    // Return the color passed from the Vertex Shader
-    return in.color;
+fragment float4 fragment_main(RasterizerData in [[stage_in]], constant LightUniforms &lightData [[buffer(0)]])
+{
+    float3 N = normalize(in.normal);
+
+    // Reverse the light direction so it points towards the light source for the math to work
+    float3 L = normalize(-lightData.lightDirection.xyz);
+
+    // Calculate Lambertian Reflection (The dot product)
+    float diff = max(dot(N, L), 0.0f);
+
+    // Define the material
+    float3 baseColor = float3(0.8f, 0.4f, 0.2f);
+
+    // Apply the lighting
+    // Ambient light 0,1f so not too dark shadows + Diffuse Light
+    float3 ambient = baseColor * 0.1f;
+    float3 diffuse = baseColor * lightData.lightColor.rgb * diff;
+    float3 finalColor = ambient + diffuse;
+
+    return float4(finalColor, 1.0f);
 }

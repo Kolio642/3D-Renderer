@@ -15,22 +15,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-// Internal Constants & Structs
-namespace app
-{
-    const int WIDTH = 800;
-    const int HEIGHT = 600;
-    const float CAMERA_DISTANCE = 4.0f;
-    const float CAMERA_HEIGHT = 1.5f;
-    const float WORLD_SPIN_SPEED = 0.8f;
-
-    struct Vertex
-    {
-        glm::vec3 position;
-        glm::vec4 color;
-    };
-}
-
 // Custom Hasher for tinyobj::index_t as a map key
 struct IndexHasher
 {
@@ -66,6 +50,10 @@ bool RenderApp::Initialize()
         return false;
     if (!CreatePipeline())
         return false;
+
+    // Set Light defaults
+    mainLight.direction = glm::vec4(1.0f, -1.0f, 1.0f, 0.0f);
+    mainLight.color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
     return true;
 }
@@ -129,19 +117,10 @@ bool RenderApp::CreateMesh()
                     attrib.vertices[3 * index.vertex_index + 2]};
 
                 // Map normals to RGB colors
-                if (index.normal_index >= 0)
-                {
-                    vertex.color = {
-                        (attrib.normals[3 * index.normal_index + 0] + 1.0f) * 0.5f,
-                        (attrib.normals[3 * index.normal_index + 1] + 1.0f) * 0.5f,
-                        (attrib.normals[3 * index.normal_index + 2] + 1.0f) * 0.5f,
-                        1.0f};
-                }
-                else
-                {
-                    // Fallback color if the OBJ has no normals
-                    vertex.color = {0.8f, 0.8f, 0.8f, 1.0f};
-                }
+                vertex.normal = {
+                    (attrib.normals[3 * index.normal_index + 0]),
+                    (attrib.normals[3 * index.normal_index + 1]),
+                    (attrib.normals[3 * index.normal_index + 2])};
 
                 minBounds = glm::min(minBounds, vertex.position);
                 maxBounds = glm::max(maxBounds, vertex.position);
@@ -150,7 +129,7 @@ bool RenderApp::CreateMesh()
                 vertices.push_back(vertex);
 
                 // Record it's location in the hash map
-                uniqueVertices[index] = static_cast <Uint32> (vertices.size() - 1);
+                uniqueVertices[index] = static_cast<Uint32>(vertices.size() - 1);
             }
 
             indices.push_back(uniqueVertices[index]);
@@ -176,9 +155,9 @@ bool RenderApp::CreateMesh()
     vertexBuffer = SDL_CreateGPUBuffer(gpu, &vertexBufferInfo);
 
     SDL_GPUTransferBufferCreateInfo vertexTransferInfo{SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, (Uint32)vertexBufferSize};
-    SDL_GPUTransferBuffer* vertexTransferBuffer = SDL_CreateGPUTransferBuffer(gpu, &vertexTransferInfo);
+    SDL_GPUTransferBuffer *vertexTransferBuffer = SDL_CreateGPUTransferBuffer(gpu, &vertexTransferInfo);
 
-    void* vertexMapPtr = SDL_MapGPUTransferBuffer(gpu, vertexTransferBuffer, false);
+    void *vertexMapPtr = SDL_MapGPUTransferBuffer(gpu, vertexTransferBuffer, false);
     std::memcpy(vertexMapPtr, vertices.data(), vertexBufferSize);
     SDL_UnmapGPUTransferBuffer(gpu, vertexTransferBuffer);
 
@@ -190,9 +169,9 @@ bool RenderApp::CreateMesh()
     indexBuffer = SDL_CreateGPUBuffer(gpu, &indexBufferInfo);
 
     SDL_GPUTransferBufferCreateInfo indicesTransferInfo{SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, (Uint32)indexBufferSize};
-    SDL_GPUTransferBuffer* indicesTransferBuffer = SDL_CreateGPUTransferBuffer(gpu, &indicesTransferInfo);
+    SDL_GPUTransferBuffer *indicesTransferBuffer = SDL_CreateGPUTransferBuffer(gpu, &indicesTransferInfo);
 
-    void* indicesMapPtr = SDL_MapGPUTransferBuffer(gpu, indicesTransferBuffer, false);
+    void *indicesMapPtr = SDL_MapGPUTransferBuffer(gpu, indicesTransferBuffer, false);
     std::memcpy(indicesMapPtr, indices.data(), indexBufferSize);
     SDL_UnmapGPUTransferBuffer(gpu, indicesTransferBuffer);
 
@@ -236,7 +215,7 @@ bool RenderApp::CreatePipeline()
     vertexShader = SDL_CreateGPUShader(gpu, &vertInfo);
 
     SDL_GPUShaderCreateInfo fragInfo = vertInfo;
-    fragInfo.num_uniform_buffers = 0;
+    fragInfo.num_uniform_buffers = 1;
     fragInfo.entrypoint = "fragment_main";
     fragInfo.stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
 
@@ -250,7 +229,7 @@ bool RenderApp::CreatePipeline()
 
     SDL_GPUVertexAttribute vertexAttributes[2] = {
         {0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, offsetof(app::Vertex, position)},
-        {1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, offsetof(app::Vertex, color)}};
+        {1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, offsetof(app::Vertex, normal)}};
 
     SDL_GPUColorTargetDescription colorTargetDesc[1]{};
     colorTargetDesc[0].format = SDL_GetGPUSwapchainTextureFormat(gpu, window);
@@ -375,16 +354,17 @@ void RenderApp::RenderFrame()
 
         SDL_GPURenderPass *renderPass = SDL_BeginGPURenderPass(cmdBuf, &colorTargetInfo, 1, &depthTargetInfo);
         SDL_BindGPUGraphicsPipeline(renderPass, pipeline);
-        
+
         // Bind the vertexBuffer
         SDL_GPUBufferBinding vertexBinding{vertexBuffer, 0};
         SDL_BindGPUVertexBuffers(renderPass, 0, &vertexBinding, 1);
 
         // Bind the indexBuffer
-        SDL_GPUBufferBinding indexBinding {indexBuffer, 0};
+        SDL_GPUBufferBinding indexBinding{indexBuffer, 0};
         SDL_BindGPUIndexBuffer(renderPass, &indexBinding, SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
         SDL_PushGPUVertexUniformData(cmdBuf, 0, glm::value_ptr(mvp), sizeof(glm::mat4));
+        SDL_PushGPUFragmentUniformData(cmdBuf, 0, &mainLight, sizeof(app::LightUniforms));
 
         SDL_DrawGPUIndexedPrimitives(renderPass, indexCount, 1, 0, 0, 0);
 
@@ -403,7 +383,7 @@ void RenderApp::Cleanup()
         SDL_ReleaseGPUTexture(gpu, depthTexture);
     if (vertexBuffer)
         SDL_ReleaseGPUBuffer(gpu, vertexBuffer);
-    if(indexBuffer)
+    if (indexBuffer)
         SDL_ReleaseGPUBuffer(gpu, indexBuffer);
     if (pipeline)
         SDL_ReleaseGPUGraphicsPipeline(gpu, pipeline);

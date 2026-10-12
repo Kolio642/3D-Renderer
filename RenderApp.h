@@ -4,6 +4,7 @@
 
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
+#include <glm/mat4x4.hpp>
 
 #include <vector>
 #include <string>
@@ -15,19 +16,30 @@ namespace app
     const int HEIGHT = 600;
     const float CAMERA_DISTANCE = 4.0f;
     const float CAMERA_HEIGHT = 1.5f;
-    const float WORLD_SPIN_SPEED = 0.8f;
+    const float WORLD_SPIN_SPEED = 0.6f;
 
     struct Vertex
     {
         glm::vec3 position;
         glm::vec3 normal;
+        glm::vec3 color;
     };
 
-    struct LightUniforms
+    // Data for the Vertex Shader
+    struct VertexUniforms
     {
-        glm::vec4 direction;
-        glm::vec4 color;
+        glm::mat4 mvp;
+        glm::mat4 model;
     };
+
+    // Data for the Fragment Shader
+    struct FragmentUniforms
+    {
+        glm::vec4 lightDirection;
+        glm::vec4 lightColor;
+        glm::vec4 objectColor;
+    };
+
 }
 
 class RenderApp
@@ -53,7 +65,7 @@ private:
     void UpdateDepthTexture(Uint32 width, Uint32 height);
 
     // Global light
-    app::LightUniforms mainLight;
+    app::FragmentUniforms mainLight;
 
     // Core SDL State
     SDL_Window *window = nullptr;

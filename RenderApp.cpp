@@ -15,25 +15,33 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-// Custom Hasher for tinyobj::index_t as a map key
-struct IndexHasher
+// Custom function to find equal hashes
+struct VertexKey
 {
-    size_t operator()(const tinyobj::index_t &index) const
+    tinyobj::index_t idx;
+    int material_id;
+};
+
+// Custom Hasher for tinyobj::index_t as a map key
+struct VertexKeyHasher
+{
+    size_t operator()(const VertexKey &key) const
     {
-        return (((size_t)index.normal_index) ^
-                ((size_t)index.texcoord_index << 1) ^
-                ((size_t)index.vertex_index << 2));
+        return (((size_t)key.idx.normal_index) ^
+                ((size_t)key.idx.texcoord_index << 1) ^
+                ((size_t)key.idx.vertex_index << 2)) ^
+               ((size_t)key.material_id << 3);
     }
 };
 
-// Custom function to find equal hashes
-struct IndexEqual
+struct VertexKeyEqual
 {
-    bool operator()(const tinyobj::index_t &a, const tinyobj::index_t &b) const
+    bool operator()(const VertexKey &a, const VertexKey &b) const
     {
-        return a.vertex_index == b.vertex_index &&
-               a.normal_index == b.normal_index &&
-               a.texcoord_index == b.texcoord_index;
+        return a.idx.vertex_index == b.idx.vertex_index &&
+               a.idx.normal_index == b.idx.normal_index &&
+               a.idx.texcoord_index == b.idx.texcoord_index &&
+               a.material_id == b.material_id;
     }
 };
 
@@ -52,8 +60,8 @@ bool RenderApp::Initialize()
         return false;
 
     // Set Light defaults
-    mainLight.direction = glm::vec4(1.0f, -1.0f, 1.0f, 0.0f);
-    mainLight.color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    mainLight.lightDirection = glm::vec4(1.0f, -1.0f, 1.0f, 0.0f);
+    mainLight.lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
     return true;
 }
@@ -88,51 +96,84 @@ bool RenderApp::CreateMesh()
     std::vector<tinyobj::material_t> materials;
     std::string warn, err;
 
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "recources/dragon.obj"))
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "recources/breakfast_room/breakfast_room.obj", "recources/breakfast_room/"))
     {
         std::cerr << "Failed to load OBJ " << warn << err << '\n';
     }
 
     std::vector<app::Vertex> vertices;
+    std::vector<Uint32> indices; // Instructions how to draw the points
 
     // Center and scale the model
     glm::vec3 minBounds(std::numeric_limits<float>::max());
     glm::vec3 maxBounds(std::numeric_limits<float>::min());
 
-    std::vector<Uint32> indices; // Instructions how to draw the points
-
-    std::unordered_map<tinyobj::index_t, Uint32, IndexHasher, IndexEqual> uniqueVertices;
+    std::unordered_map<VertexKey, Uint32, VertexKeyHasher, VertexKeyEqual> uniqueVertices;
 
     for (const auto &shape : shapes)
     {
-        for (const auto &index : shape.mesh.indices)
+        size_t index_offset = 0;
+
+        // Loop over faces (polygons)
+        for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++)
         {
-            // If we haven't seen this vertex add it to the create one
-            if (uniqueVertices.count(index) == 0)
+            // Number of vertices in this face
+            size_t fv = size_t(shape.mesh.num_face_vertices[f]);
+
+            // Get the material ID for this face
+            int material_id = shape.mesh.material_ids[f];
+
+            // Extract the diffuse color from the material (default to white)
+            glm::vec3 matColor = glm::vec3(1.0f, 1.0f, 1.0f);
+            if (material_id >= 0 && material_id < materials.size())
             {
-                app::Vertex vertex{};
-                vertex.position = {
-                    attrib.vertices[3 * index.vertex_index + 0],
-                    attrib.vertices[3 * index.vertex_index + 1],
-                    attrib.vertices[3 * index.vertex_index + 2]};
-
-                // Map normals to RGB colors
-                vertex.normal = {
-                    (attrib.normals[3 * index.normal_index + 0]),
-                    (attrib.normals[3 * index.normal_index + 1]),
-                    (attrib.normals[3 * index.normal_index + 2])};
-
-                minBounds = glm::min(minBounds, vertex.position);
-                maxBounds = glm::max(maxBounds, vertex.position);
-
-                // Add new vertex to array
-                vertices.push_back(vertex);
-
-                // Record it's location in the hash map
-                uniqueVertices[index] = static_cast<Uint32>(vertices.size() - 1);
+                matColor = glm::vec3(
+                    materials[material_id].diffuse[0],
+                    materials[material_id].diffuse[1],
+                    materials[material_id].diffuse[2]
+                );
             }
 
-            indices.push_back(uniqueVertices[index]);
+            for (size_t v = 0; v < fv; v++)
+            {
+                tinyobj::index_t idx = shape.mesh.indices[index_offset + v];
+                VertexKey key{idx, material_id};
+
+                // If we haven't seen this vertex add it to the create one
+                if (uniqueVertices.count(key) == 0)
+                {
+                    app::Vertex vertex{};
+                    vertex.position = {
+                        attrib.vertices[3 * idx.vertex_index + 0],
+                        attrib.vertices[3 * idx.vertex_index + 1],
+                        attrib.vertices[3 * idx.vertex_index + 2]};
+
+                    // Map normals to RGB colors
+                    if(idx.normal_index >= 0)
+                    {
+                        vertex.normal = {
+                        (attrib.normals[3 * idx.normal_index + 0]),
+                        (attrib.normals[3 * idx.normal_index + 1]),
+                        (attrib.normals[3 * idx.normal_index + 2])
+                        };
+                    }
+                    
+                    vertex.color = matColor;
+
+                    minBounds = glm::min(minBounds, vertex.position);
+                    maxBounds = glm::max(maxBounds, vertex.position);
+
+                    // Add new vertex to array
+                    vertices.push_back(vertex);
+
+                    // Record it's location in the hash map
+                    uniqueVertices[key] = static_cast<Uint32>(vertices.size() - 1);
+                }
+
+                indices.push_back(uniqueVertices[key]);
+            }
+            
+            index_offset += fv;
         }
     }
 
@@ -227,9 +268,11 @@ bool RenderApp::CreatePipeline()
     SDL_GPUVertexBufferDescription vertexBufferDesc[1] = {
         {0, sizeof(app::Vertex)}};
 
-    SDL_GPUVertexAttribute vertexAttributes[2] = {
+    SDL_GPUVertexAttribute vertexAttributes[3] = {
         {0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, offsetof(app::Vertex, position)},
-        {1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, offsetof(app::Vertex, normal)}};
+        {1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, offsetof(app::Vertex, normal)},
+        {2, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, offsetof(app::Vertex, color)}
+    };
 
     SDL_GPUColorTargetDescription colorTargetDesc[1]{};
     colorTargetDesc[0].format = SDL_GetGPUSwapchainTextureFormat(gpu, window);
@@ -242,7 +285,7 @@ bool RenderApp::CreatePipeline()
 
     pipelineInfo.vertex_input_state.num_vertex_buffers = 1;
     pipelineInfo.vertex_input_state.vertex_buffer_descriptions = vertexBufferDesc;
-    pipelineInfo.vertex_input_state.num_vertex_attributes = 2;
+    pipelineInfo.vertex_input_state.num_vertex_attributes = 3;
     pipelineInfo.vertex_input_state.vertex_attributes = vertexAttributes;
 
     pipelineInfo.target_info.num_color_targets = 1;
@@ -364,7 +407,7 @@ void RenderApp::RenderFrame()
         SDL_BindGPUIndexBuffer(renderPass, &indexBinding, SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
         SDL_PushGPUVertexUniformData(cmdBuf, 0, glm::value_ptr(mvp), sizeof(glm::mat4));
-        SDL_PushGPUFragmentUniformData(cmdBuf, 0, &mainLight, sizeof(app::LightUniforms));
+        SDL_PushGPUFragmentUniformData(cmdBuf, 0, &mainLight, sizeof(app::FragmentUniforms));
 
         SDL_DrawGPUIndexedPrimitives(renderPass, indexCount, 1, 0, 0, 0);
 

@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL.h>
 
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
@@ -18,11 +19,20 @@ namespace app
     const float CAMERA_HEIGHT = 1.5f;
     const float WORLD_SPIN_SPEED = 0.6f;
 
+    struct SubMesh
+    {
+        Uint32 indexOffset;
+        Uint32 indexCount;
+        int materialId;
+    };
+    
+
     struct Vertex
     {
         glm::vec3 position;
         glm::vec3 normal;
         glm::vec3 color;
+        glm::vec2 uv; // Uvs (Texture Coordinates)
     };
 
     // Data for the Vertex Shader
@@ -37,7 +47,6 @@ namespace app
     {
         glm::vec4 lightDirection;
         glm::vec4 lightColor;
-        glm::vec4 objectColor;
     };
 
 }
@@ -61,6 +70,7 @@ private:
     void Cleanup();
 
     // Helpers
+    SDL_GPUTexture* LoadTexture(const std::string &path);
     std::vector<char> LoadShaderFile(const std::string &path);
     void UpdateDepthTexture(Uint32 width, Uint32 height);
 
@@ -77,6 +87,11 @@ private:
     SDL_GPUShader *vertexShader = nullptr;
     SDL_GPUShader *fragmentShader = nullptr;
     SDL_GPUGraphicsPipeline *pipeline = nullptr;
+
+    std::vector <app::SubMesh> subMeshes;            // Stores the draw ranges for specific Texture
+    std::vector <SDL_GPUTexture*> materialTextures;  // Stores loaded Texture material
+    SDL_GPUTexture* whiteFallbackTexture = nullptr;  // Used when a material has no texture
+    SDL_GPUSampler* sampler = nullptr;               // Tells the GPU how to read the pixels   
 
     // Depth Texture State
     SDL_GPUTexture *depthTexture = nullptr;

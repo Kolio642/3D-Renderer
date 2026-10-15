@@ -6,13 +6,15 @@ using namespace metal;
 struct Uniforms
 {
     float4x4 mvp;
+    float4x4 model;
 };
 
 struct VertexInput
 {
     float3 position [[attribute(0)]];
-    float3 normal [[attribute(1)]];
-    float3 color [[attribute(2)]];
+    float3 normal   [[attribute(1)]];
+    float3 color    [[attribute(2)]];
+    float2 uv       [[attribute(3)]];
 };
 
 // Data passed from the Vertex shader to the Fragment shader
@@ -21,6 +23,7 @@ struct RasterizerData
     float4 position [[position]];
     float3 normal;
     float3 color;
+    float2 uv;
 };
 
 struct LightUniforms
@@ -37,25 +40,28 @@ vertex RasterizerData vertex_main(VertexInput in [[stage_in]], constant Uniforms
     RasterizerData out;
 
     out.position = uniforms.mvp * float4(in.position, 1.0);
-    out.normal = (uniforms.mvp * float4(in.normal, 0.0f)).xyz;
+    out.normal = (uniforms.model * float4(in.normal, 0.0f)).xyz;
     out.color = in.color;
+    out.uv = in.uv;
 
     return out; 
 }
 
 // Fragment Shader
-fragment float4 fragment_main(RasterizerData in [[stage_in]], constant LightUniforms &lightData [[buffer(0)]])
+fragment float4 fragment_main(RasterizerData in [[stage_in]],
+                              constant LightUniforms &lightData [[buffer(0)]],
+                              texture2d <float> diffuseTex [[texture(0)]],
+                              sampler texSampler [[sampler(0)]])
 {
     float3 N = normalize(in.normal);
-
     // Reverse the light direction so it points towards the light source for the math to work
     float3 L = normalize(-lightData.lightDirection.xyz);
-
     // Calculate Lambertian Reflection (The dot product)
     float diff = max(dot(N, L), 0.0f);
 
-    // Define the material
-    float3 baseColor = in.color;
+    // Sample the Teaxture and multiply by material diffuse color
+    float4 texColor = diffuseTex.sample(texSampler, in.uv);
+    float3 baseColor = in.color * texColor.rgb;
 
     // Apply the lighting
     // Ambient light 0,1f so not too dark shadows + Diffuse Light

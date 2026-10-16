@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Camera.h"
+
 #include <SDL3/SDL.h>
 
 #include <glm/vec2.hpp>
@@ -18,6 +20,8 @@ namespace app
     const float CAMERA_DISTANCE = 4.0f;
     const float CAMERA_HEIGHT = 1.5f;
     const float WORLD_SPIN_SPEED = 0.6f;
+    const float CAMERA_SPEED = 2.5f;
+    const float MOUSE_SENSITIVITY = 0.1f;
 
     struct SubMesh
     {
@@ -61,12 +65,18 @@ public:
     void Run();
 
 private:
+    // Camera
+    Camera camera {glm::vec3(0.0f, app::CAMERA_HEIGHT, app::CAMERA_DISTANCE)};
+    bool mouseCaptured = false;
+    Uint64 lastFrameTime = 0;
+
     // Lifestyle phases
     bool InitSDL();
     bool CreateMesh();
     bool CreatePipeline();
     void RenderFrame();
     void HandleEvents(bool &running);
+    void UpdateCamera(float deltaTime);
     void Cleanup();
 
     // Helpers

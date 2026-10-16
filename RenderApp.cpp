@@ -203,10 +203,13 @@ bool RenderApp::CreateMesh()
             glm::vec3 matColor = glm::vec3(1.0f, 1.0f, 1.0f);
             if (material_id >= 0 && material_id < materials.size())
             {
-                matColor = glm::vec3(
+                if(materials[material_id].diffuse_texname.empty())
+                {
+                    matColor = glm::vec3(
                     materials[material_id].diffuse[0],
                     materials[material_id].diffuse[1],
                     materials[material_id].diffuse[2]);
+                }   
             }
 
             for (size_t v = 0; v < fv; v++)
@@ -453,10 +456,16 @@ void RenderApp::Run()
 {
 
     bool running = true;
+    lastFrameTime = SDL_GetTicks();
 
     while (running)
     {
+        Uint64 currentTime = SDL_GetTicks();
+        float deltaTime = (currentTime - lastFrameTime) / 1000.0f;
+        lastFrameTime = currentTime;
+
         HandleEvents(running);
+        camera.ProcessKeyboard(SDL_GetKeyboardState(nullptr), deltaTime);
         RenderFrame();
     }
 }
@@ -469,6 +478,23 @@ void RenderApp::HandleEvents(bool &running)
         if (event.type == SDL_EVENT_QUIT)
         {
             running = false;
+        }
+        else if(event.type == SDL_EVENT_KEY_DOWN && event.key.scancode == SDL_SCANCODE_ESCAPE)
+        {
+            mouseCaptured = false;
+            SDL_SetWindowRelativeMouseMode(window, false);
+        }
+        else if(event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT)
+        {
+            if(!mouseCaptured)
+            {
+                mouseCaptured = true;
+                SDL_SetWindowRelativeMouseMode(window, true);
+            }
+        }
+        else if(event.type == SDL_EVENT_MOUSE_MOTION && mouseCaptured)
+        {
+            camera.ProcessMouseMovement(event.motion.xrel, event.motion.yrel);
         }
     }
 }
@@ -520,10 +546,10 @@ void RenderApp::RenderFrame()
         float time = SDL_GetTicks() / 1000.0f;
         float aspect = swapchainHeight > 0 ? (float)swapchainWidth / (float)swapchainHeight : 1.0f;
 
-        // Math behind MVP M<atrix
-        glm::mat4 proj = glm::perspectiveZO(glm::radians(45.0f), aspect, 0.1f, 100.0f);
-        glm::mat4 view = glm::lookAt(glm::vec3(0.0f, app::CAMERA_HEIGHT, app::CAMERA_DISTANCE), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::mat4 world = glm::rotate(glm::mat4(1.0f), time * app::WORLD_SPIN_SPEED, glm::vec3(0.0f, 1.0f, 0.0f));
+        // Math behind MVP Matrix
+        glm::mat4 proj = camera.GetProjectionMatrix(aspect);
+        glm::mat4 view = camera.GetViewMatrix();
+        glm::mat4 world = glm::mat4(1.0f);
         glm::mat4 mvp = proj * view * world;
 
         SDL_GPUColorTargetInfo colorTargetInfo{};

@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Camera.h"
+#include "GPUContext.h"
+#include "MeshLoader.h"
+#include "Types.h"
 
 #include <SDL3/SDL.h>
 
@@ -11,49 +14,6 @@
 
 #include <vector>
 #include <string>
-
-// Internal Constants & Structs
-namespace app
-{
-    const int WIDTH = 800;
-    const int HEIGHT = 600;
-    const float CAMERA_DISTANCE = 4.0f;
-    const float CAMERA_HEIGHT = 1.5f;
-    const float WORLD_SPIN_SPEED = 0.6f;
-    const float CAMERA_SPEED = 2.5f;
-    const float MOUSE_SENSITIVITY = 0.1f;
-
-    struct SubMesh
-    {
-        Uint32 indexOffset;
-        Uint32 indexCount;
-        int materialId;
-    };
-    
-
-    struct Vertex
-    {
-        glm::vec3 position;
-        glm::vec3 normal;
-        glm::vec3 color;
-        glm::vec2 uv; // Uvs (Texture Coordinates)
-    };
-
-    // Data for the Vertex Shader
-    struct VertexUniforms
-    {
-        glm::mat4 mvp;
-        glm::mat4 model;
-    };
-
-    // Data for the Fragment Shader
-    struct FragmentUniforms
-    {
-        glm::vec4 lightDirection;
-        glm::vec4 lightColor;
-    };
-
-}
 
 class RenderApp
 {
@@ -71,16 +31,13 @@ private:
     Uint64 lastFrameTime = 0;
 
     // Lifestyle phases
-    bool InitSDL();
     bool CreateMesh();
     bool CreatePipeline();
     void RenderFrame();
     void HandleEvents(bool &running);
-    void UpdateCamera(float deltaTime);
     void Cleanup();
 
     // Helpers
-    SDL_GPUTexture* LoadTexture(const std::string &path);
     std::vector<char> LoadShaderFile(const std::string &path);
     void UpdateDepthTexture(Uint32 width, Uint32 height);
 
@@ -88,8 +45,7 @@ private:
     app::FragmentUniforms mainLight;
 
     // Core SDL State
-    SDL_Window *window = nullptr;
-    SDL_GPUDevice *gpu = nullptr;
+    GPUContext ctx;
 
     // Graphics State
     SDL_GPUBuffer *vertexBuffer = nullptr;

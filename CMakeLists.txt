@@ -11,6 +11,8 @@ find_package(glm REQUIRED)
 add_executable(${PROJECT_NAME}
     main.cpp
     RenderApp.cpp
+    GPUContext.cpp
+    MeshLoader.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR})

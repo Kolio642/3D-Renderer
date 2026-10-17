@@ -1,8 +1,6 @@
-# VS Code settings
-.vscode/
-
 # Mac system files
 .DS_Store
+.cache/
 
 # Compiled output and build directories
 build/

@@ -156,7 +156,7 @@ bool RenderApp::CreateMesh()
     std::vector<tinyobj::material_t> materials;
     std::string warn, err;
 
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "recources/breakfast_room/breakfast_room.obj", "recources/breakfast_room/"))
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "resources/breakfast_room/breakfast_room.obj", "resources/breakfast_room/"))
     {
         std::cerr << "Failed to load OBJ " << warn << err << '\n';
     }
@@ -166,7 +166,7 @@ bool RenderApp::CreateMesh()
     {
         if (!materials[i].diffuse_texname.empty())
         {
-            std::string texPath = "recources/breakfast_room/" + materials[i].diffuse_texname;
+            std::string texPath = "resources/breakfast_room/" + materials[i].diffuse_texname;
             materialTextures[i] = LoadTexture(texPath);
             if (materialTextures[i] != nullptr)
             {

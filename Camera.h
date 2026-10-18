@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Types.h"
+
 #include <SDL3/SDL.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -16,7 +18,7 @@ public:
 
     float yaw;
     float pitch;
-    float moveSpeed = 2.5f;
+    float moveSpeed = app::CAMERA_SPEED;
     float mouseSens = 0.1f;
     float fov = 45.0f;
 

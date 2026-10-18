@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include "GPUContext.h"
 #include "MeshLoader.h"
+#include "SceneData.h"
 #include "Types.h"
 
 #include <SDL3/SDL.h>
@@ -48,22 +49,16 @@ private:
     GPUContext ctx;
 
     // Graphics State
-    SDL_GPUBuffer *vertexBuffer = nullptr;
-    SDL_GPUBuffer *indexBuffer = nullptr;
     SDL_GPUShader *vertexShader = nullptr;
     SDL_GPUShader *fragmentShader = nullptr;
     SDL_GPUGraphicsPipeline *pipeline = nullptr;
 
-    std::vector <app::SubMesh> subMeshes;            // Stores the draw ranges for specific Texture
-    std::vector <SDL_GPUTexture*> materialTextures;  // Stores loaded Texture material
-    SDL_GPUTexture* whiteFallbackTexture = nullptr;  // Used when a material has no texture
+    SceneData scene;
+
     SDL_GPUSampler* sampler = nullptr;               // Tells the GPU how to read the pixels   
 
     // Depth Texture State
     SDL_GPUTexture *depthTexture = nullptr;
     Uint32 currentDepthWidth = 0;
     Uint32 currentDepthHeight = 0;
-
-    Uint32 vertexCount = 0;
-    Uint32 indexCount = 0;
 };

@@ -13,7 +13,7 @@ namespace app
     const float CAMERA_DISTANCE = 4.0f;
     const float CAMERA_HEIGHT = 1.5f;
     const float WORLD_SPIN_SPEED = 0.6f;
-    const float CAMERA_SPEED = 2.5f;
+    const float CAMERA_SPEED = 1.5f;
     const float MOUSE_SENSITIVITY = 0.1f;
 
     struct SubMesh
@@ -23,7 +23,6 @@ namespace app
         int materialId;
     };
     
-
     struct Vertex
     {
         glm::vec3 position;
@@ -45,5 +44,11 @@ namespace app
         glm::vec4 lightDirection;
         glm::vec4 lightColor;
     };
-
+    struct LoadedMesh
+    {
+        std::vector<Vertex> vertices;
+        std::vector<uint32_t> indices;
+        std::vector<SubMesh> subMeshes;
+        std::vector<SDL_GPUTexture *> textures;
+    };
 }

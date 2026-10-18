@@ -38,10 +38,10 @@ bool RenderApp::Initialize()
 bool RenderApp::CreateMesh()
 {
     // 1. Delegate loading OBJ, deduplicating vertices, and textures to MeshLoader
-    LoadedMesh mesh = MeshLoader::LoadOBJ(
+    app::LoadedMesh mesh = MeshLoader::LoadOBJ(
         ctx.GetDevice(),
-        "resources/breakfast_room/breakfast_room.obj",
-        "resources/breakfast_room/");
+        "resources/sponza/sponza.obj",
+        "resources/sponza/");
 
     if (mesh.vertices.empty())
     {
@@ -49,56 +49,7 @@ bool RenderApp::CreateMesh()
         return false;
     }
 
-    // 2. Keep ownership of submeshes and textures for rendering
-    subMeshes = std::move(mesh.subMeshes);
-    materialTextures = std::move(mesh.textures);
-
-    // 3. Vertex Buffer setup
-    vertexCount = mesh.vertices.size();
-    size_t vertexBufferSize = vertexCount * sizeof(app::Vertex);
-
-    SDL_GPUBufferCreateInfo vertexBufferInfo{SDL_GPU_BUFFERUSAGE_VERTEX, (Uint32)vertexBufferSize};
-    vertexBuffer = SDL_CreateGPUBuffer(ctx.GetDevice(), &vertexBufferInfo);
-
-    SDL_GPUTransferBufferCreateInfo vertexTransferInfo{SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, (Uint32)vertexBufferSize};
-    SDL_GPUTransferBuffer *vertexTransferBuffer = SDL_CreateGPUTransferBuffer(ctx.GetDevice(), &vertexTransferInfo);
-
-    void *vertexMapPtr = SDL_MapGPUTransferBuffer(ctx.GetDevice(), vertexTransferBuffer, false);
-    std::memcpy(vertexMapPtr, mesh.vertices.data(), vertexBufferSize);
-    SDL_UnmapGPUTransferBuffer(ctx.GetDevice(), vertexTransferBuffer);
-
-    // 4. Index Buffer setup
-    indexCount = mesh.indices.size();
-    size_t indexBufferSize = indexCount * sizeof(Uint32);
-
-    SDL_GPUBufferCreateInfo indexBufferInfo{SDL_GPU_BUFFERUSAGE_INDEX, (Uint32)indexBufferSize};
-    indexBuffer = SDL_CreateGPUBuffer(ctx.GetDevice(), &indexBufferInfo);
-
-    SDL_GPUTransferBufferCreateInfo indicesTransferInfo{SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, (Uint32)indexBufferSize};
-    SDL_GPUTransferBuffer *indicesTransferBuffer = SDL_CreateGPUTransferBuffer(ctx.GetDevice(), &indicesTransferInfo);
-
-    void *indicesMapPtr = SDL_MapGPUTransferBuffer(ctx.GetDevice(), indicesTransferBuffer, false);
-    std::memcpy(indicesMapPtr, mesh.indices.data(), indexBufferSize);
-    SDL_UnmapGPUTransferBuffer(ctx.GetDevice(), indicesTransferBuffer);
-
-    // 5. Upload both Buffers to GPU
-    SDL_GPUCommandBuffer *uploadCmdBuf = SDL_AcquireGPUCommandBuffer(ctx.GetDevice());
-    SDL_GPUCopyPass *copyPass = SDL_BeginGPUCopyPass(uploadCmdBuf);
-
-    SDL_GPUTransferBufferLocation vertexSource = {vertexTransferBuffer, 0};
-    SDL_GPUBufferRegion vertexDestination = {vertexBuffer, 0, (Uint32)vertexBufferSize};
-    SDL_UploadToGPUBuffer(copyPass, &vertexSource, &vertexDestination, false);
-
-    SDL_GPUTransferBufferLocation indicesSource = {indicesTransferBuffer, 0};
-    SDL_GPUBufferRegion indicesDestination = {indexBuffer, 0, (Uint32)indexBufferSize};
-    SDL_UploadToGPUBuffer(copyPass, &indicesSource, &indicesDestination, false);
-
-    SDL_EndGPUCopyPass(copyPass);
-    SDL_SubmitGPUCommandBuffer(uploadCmdBuf);
-
-    SDL_ReleaseGPUTransferBuffer(ctx.GetDevice(), vertexTransferBuffer);
-    SDL_ReleaseGPUTransferBuffer(ctx.GetDevice(), indicesTransferBuffer);
-
+    scene.UploadMesh(ctx.GetDevice(), mesh);
     return true;
 }
 
@@ -175,44 +126,6 @@ bool RenderApp::CreatePipeline()
     samplerInfo.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
     samplerInfo.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
     samplerInfo.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
-
-    // Create the white fallback texture
-    SDL_GPUTextureCreateInfo fallbackInfo{};
-    fallbackInfo.type = SDL_GPU_TEXTURETYPE_2D;
-    fallbackInfo.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
-    fallbackInfo.width = 1;
-    fallbackInfo.height = 1;
-    fallbackInfo.layer_count_or_depth = 1;
-    fallbackInfo.num_levels = 1;
-    fallbackInfo.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER;
-    whiteFallbackTexture = SDL_CreateGPUTexture(ctx.GetDevice(), &fallbackInfo);
-
-    SDL_GPUTransferBufferCreateInfo fallbackTransferInfo{SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, 4};
-    SDL_GPUTransferBuffer *fallbackTransfer = SDL_CreateGPUTransferBuffer(ctx.GetDevice(), &fallbackTransferInfo);
-
-    // 4 bytes: R=255, G=255, B=255, A=255 (Solid White)
-    Uint8 whitePixel[4] = {255, 255, 255, 255};
-    void *map = SDL_MapGPUTransferBuffer(ctx.GetDevice(), fallbackTransfer, false);
-    std::memcpy(map, whitePixel, 4);
-    SDL_UnmapGPUTransferBuffer(ctx.GetDevice(), fallbackTransfer);
-
-    SDL_GPUCommandBuffer *fallbackCmd = SDL_AcquireGPUCommandBuffer(ctx.GetDevice());
-    SDL_GPUCopyPass *fallbackCopy = SDL_BeginGPUCopyPass(fallbackCmd);
-
-    SDL_GPUTextureTransferInfo fallbackSource{};
-    fallbackSource.transfer_buffer = fallbackTransfer;
-    fallbackSource.offset = 0;
-
-    SDL_GPUTextureRegion fallbackDest{};
-    fallbackDest.texture = whiteFallbackTexture;
-    fallbackDest.w = 1;
-    fallbackDest.h = 1;
-    fallbackDest.d = 1;
-
-    SDL_UploadToGPUTexture(fallbackCopy, &fallbackSource, &fallbackDest, false);
-    SDL_EndGPUCopyPass(fallbackCopy);
-    SDL_SubmitGPUCommandBuffer(fallbackCmd);
-    SDL_ReleaseGPUTransferBuffer(ctx.GetDevice(), fallbackTransfer);
 
     sampler = SDL_CreateGPUSampler(ctx.GetDevice(), &samplerInfo);
 
@@ -338,11 +251,11 @@ void RenderApp::RenderFrame()
         SDL_BindGPUGraphicsPipeline(renderPass, pipeline);
 
         // Bind the vertexBuffer
-        SDL_GPUBufferBinding vertexBinding{vertexBuffer, 0};
+        SDL_GPUBufferBinding vertexBinding{scene.GetVertexBuffer(), 0};
         SDL_BindGPUVertexBuffers(renderPass, 0, &vertexBinding, 1);
 
         // Bind the indexBuffer
-        SDL_GPUBufferBinding indexBinding{indexBuffer, 0};
+        SDL_GPUBufferBinding indexBinding{scene.GetIndexBuffer(), 0};
         SDL_BindGPUIndexBuffer(renderPass, &indexBinding, SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
         app::VertexUniforms vertData{};
@@ -352,13 +265,9 @@ void RenderApp::RenderFrame()
         SDL_PushGPUVertexUniformData(cmdBuf, 0, &vertData, sizeof(app::VertexUniforms));
         SDL_PushGPUFragmentUniformData(cmdBuf, 0, &mainLight, sizeof(app::FragmentUniforms));
 
-        for (const auto &sub : subMeshes)
+        for (const auto &sub : scene.GetSubMeshes())
         {
-            SDL_GPUTexture *texToBind = whiteFallbackTexture;
-            if (sub.materialId >= 0 && sub.materialId < materialTextures.size() && materialTextures[sub.materialId] != nullptr)
-            {
-                texToBind = materialTextures[sub.materialId];
-            }
+            SDL_GPUTexture *texToBind = scene.GetTexture(sub.materialId);
 
             SDL_GPUTextureSamplerBinding texBinding{};
             texBinding.texture = texToBind;
@@ -378,27 +287,10 @@ void RenderApp::RenderFrame()
 
 void RenderApp::Cleanup()
 {
-
-    if (ctx.GetDevice())
-        SDL_WaitForGPUIdle(ctx.GetDevice());
-
-    for (SDL_GPUTexture *tex : materialTextures)
-    {
-        if (tex != nullptr)
-            SDL_ReleaseGPUTexture(ctx.GetDevice(), tex);
-    }
-    materialTextures.clear();
-    if (whiteFallbackTexture)
-        SDL_ReleaseGPUTexture(ctx.GetDevice(), whiteFallbackTexture);
-
     if (sampler)
         SDL_ReleaseGPUSampler(ctx.GetDevice(), sampler);
     if (depthTexture)
         SDL_ReleaseGPUTexture(ctx.GetDevice(), depthTexture);
-    if (vertexBuffer)
-        SDL_ReleaseGPUBuffer(ctx.GetDevice(), vertexBuffer);
-    if (indexBuffer)
-        SDL_ReleaseGPUBuffer(ctx.GetDevice(), indexBuffer);
     if (pipeline)
         SDL_ReleaseGPUGraphicsPipeline(ctx.GetDevice(), pipeline);
     if (vertexShader)

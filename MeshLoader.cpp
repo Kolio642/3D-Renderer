@@ -39,11 +39,11 @@ struct VertexKeyEqual
     }
 };
 
-LoadedMesh MeshLoader::LoadOBJ(SDL_GPUDevice* gpu,
+app::LoadedMesh MeshLoader::LoadOBJ(SDL_GPUDevice* gpu,
                               const std::string& objPath,
                               const std::string& mtlDir) 
 {
-    LoadedMesh result;
+    app::LoadedMesh result;
 
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;

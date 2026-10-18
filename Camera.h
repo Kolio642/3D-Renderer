@@ -19,7 +19,7 @@ public:
     float yaw;
     float pitch;
     float moveSpeed = app::CAMERA_SPEED;
-    float mouseSens = 0.1f;
+    float mouseSens = app::MOUSE_SENSITIVITY;
     float fov = 45.0f;
 
     Camera(glm::vec3 startPos = glm::vec3(0.0f, 0.5f, 2.5f),

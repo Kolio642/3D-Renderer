@@ -13,7 +13,7 @@ namespace app
     const float CAMERA_DISTANCE = 4.0f;
     const float CAMERA_HEIGHT = 1.5f;
     const float WORLD_SPIN_SPEED = 0.6f;
-    const float CAMERA_SPEED = 1.5f;
+    const float CAMERA_SPEED = 1.0f;
     const float MOUSE_SENSITIVITY = 0.1f;
 
     struct SubMesh

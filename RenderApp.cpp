@@ -1,8 +1,6 @@
 #include "RenderApp.h"
 
-#include <unordered_map>
 #include <iostream>
-#include <fstream>
 #include <cstring>
 #include <cmath>
 
@@ -55,29 +53,22 @@ bool RenderApp::CreateMesh()
 
 bool RenderApp::CreatePipeline()
 {
-    std::vector<char> shaderCode = LoadShaderFile("shaders/triangle.msl");
-    if (shaderCode.empty())
-        return false;
+    vertexShader = ShaderManager::LoadShader(
+        ctx.GetDevice(),
+        "shaders/triangle.msl",
+        "vertex_main",
+        SDL_GPU_SHADERSTAGE_VERTEX,
+        1 // 1 uniform buffer (VertexUniforms)
+    );
 
-    const size_t shaderSize = shaderCode.size() - 1;
-
-    SDL_GPUShaderCreateInfo vertInfo{};
-    vertInfo.num_uniform_buffers = 1;
-    vertInfo.code = reinterpret_cast<const Uint8 *>(shaderCode.data());
-    vertInfo.code_size = shaderSize;
-    vertInfo.entrypoint = "vertex_main";
-    vertInfo.format = SDL_GPU_SHADERFORMAT_MSL;
-    vertInfo.stage = SDL_GPU_SHADERSTAGE_VERTEX;
-
-    vertexShader = SDL_CreateGPUShader(ctx.GetDevice(), &vertInfo);
-
-    SDL_GPUShaderCreateInfo fragInfo = vertInfo;
-    fragInfo.num_uniform_buffers = 1;
-    fragInfo.num_samplers = 1;
-    fragInfo.entrypoint = "fragment_main";
-    fragInfo.stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
-
-    fragmentShader = SDL_CreateGPUShader(ctx.GetDevice(), &fragInfo);
+    fragmentShader = ShaderManager::LoadShader(
+        ctx.GetDevice(),
+        "shaders/triangle.msl",
+        "fragment_main",
+        SDL_GPU_SHADERSTAGE_FRAGMENT,
+        1, // 1 uniform buffer (FragmentUniforms / LightData)
+        1  // 1 sampler (Diffuse texture)
+    );
 
     if (!vertexShader || !fragmentShader)
         return false;
@@ -297,20 +288,4 @@ void RenderApp::Cleanup()
         SDL_ReleaseGPUShader(ctx.GetDevice(), vertexShader);
     if (fragmentShader)
         SDL_ReleaseGPUShader(ctx.GetDevice(), fragmentShader);
-}
-
-std::vector<char> RenderApp::LoadShaderFile(const std::string &path)
-{
-    std::ifstream file(path, std::ios::ate | std::ios::binary);
-    if (!file.is_open())
-    {
-        std::cerr << "Failed to open shader file: " << path << '\n';
-        return {};
-    }
-    size_t fileSize = (size_t)file.tellg();
-    std::vector<char> buffer(fileSize + 1);
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-    buffer[fileSize] = '\0';
-    return buffer;
 }

@@ -4,6 +4,7 @@
 #include "GPUContext.h"
 #include "MeshLoader.h"
 #include "SceneData.h"
+#include "ShaderManager.h"
 #include "Types.h"
 
 #include <SDL3/SDL.h>
@@ -39,7 +40,6 @@ private:
     void Cleanup();
 
     // Helpers
-    std::vector<char> LoadShaderFile(const std::string &path);
     void UpdateDepthTexture(Uint32 width, Uint32 height);
 
     // Global light

@@ -14,6 +14,7 @@ add_executable(${PROJECT_NAME}
     GPUContext.cpp
     MeshLoader.cpp
     SceneData.cpp
+    ShaderManager.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR})

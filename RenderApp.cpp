@@ -38,8 +38,7 @@ bool RenderApp::CreateMesh()
     // 1. Delegate loading OBJ, deduplicating vertices, and textures to MeshLoader
     app::LoadedMesh mesh = MeshLoader::LoadOBJ(
         ctx.GetDevice(),
-        "resources/sponza/sponza.obj",
-        "resources/sponza/");
+        "resources/dragon.obj");
 
     if (mesh.vertices.empty())
     {
